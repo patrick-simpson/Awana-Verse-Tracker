@@ -169,6 +169,54 @@
 
         const audio = new AudioEngine();
 
+        // --- HOOKS ---
+        
+        const usePresence = (bucketKey) => {
+            const [activeCount, setActiveCount] = useState(1);
+            const sessionId = useRef(Math.random().toString(36).substring(2, 15)).current;
+
+            useEffect(() => {
+                if (!bucketKey) return;
+
+                const heartbeat = async () => {
+                    try {
+                        // Set TTL to 12 seconds, ping every 5. 
+                        // This indicates this device is active.
+                        await fetch(`https://kvdb.io/${bucketKey}/ping:${sessionId}?ttl=12`, {
+                            method: 'POST',
+                            body: '1'
+                        });
+                    } catch (e) { console.error('Heartbeat fail', e); }
+                };
+
+                const checkPeers = async () => {
+                    try {
+                        const res = await fetch(`https://kvdb.io/${bucketKey}/?prefix=ping:`);
+                        if (res.ok) {
+                            const text = await res.text();
+                            // Split by newline and filter empty strings to get key list
+                            const keys = text.split('\n').filter(k => k.trim().length > 0);
+                            setActiveCount(keys.length);
+                        }
+                    } catch (e) { console.error('Peer check fail', e); }
+                };
+
+                // Initial run
+                heartbeat();
+                checkPeers();
+
+                const pingInterval = setInterval(heartbeat, 5000);
+                const checkInterval = setInterval(checkPeers, 10000); // Check peers every 10s
+
+                return () => {
+                    clearInterval(pingInterval);
+                    clearInterval(checkInterval);
+                };
+            }, [bucketKey]);
+
+            return activeCount;
+        };
+
         // --- COMPONENTS ---
 
         // 1. Setup Screen
@@ -312,6 +360,9 @@
             const [status, setStatus] = useState('connecting'); // connecting, online, offline
             const prevCountRef = useRef(0);
             const isFirstLoad = useRef(true);
+            
+            // Use Presence Hook
+            const peerCount = usePresence(bucketKey);
 
             const fetchData = async () => {
                 try {
@@ -392,10 +443,10 @@
                     ></div>
 
                     {/* Connection Status */}
-                    <div className="absolute top-6 right-6 flex items-center gap-2 bg-white/20 backdrop-blur-sm px-3 py-1 rounded-full">
+                    <div className="absolute top-6 right-6 flex items-center gap-2 bg-white/20 backdrop-blur-sm px-4 py-2 rounded-full transition-all">
                         <div className={`w-3 h-3 rounded-full ${status === 'online' ? 'bg-green-400 animate-pulse' : 'bg-red-500'}`}></div>
                         <span className="text-white text-xs font-bold uppercase tracking-wider">
-                            {status === 'online' ? 'Live' : 'Offline'}
+                            {status === 'online' ? `Live • ${peerCount} Connected` : 'Offline'}
                         </span>
                     </div>
 
@@ -441,6 +492,9 @@
             const [count, setCount] = useState(0);
             const [loading, setLoading] = useState(false);
             const [confirmReset, setConfirmReset] = useState(false);
+            
+            // Hook in presence so the Admin remote also counts as a connected device
+            const peerCount = usePresence(bucketKey);
 
             // Fetch current state
             const sync = useCallback(async () => {
@@ -492,6 +546,9 @@
                                 ← Exit
                             </button>
                             <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-gray-400 font-bold bg-gray-100 px-2 py-1 rounded">
+                                    {peerCount} active
+                                </span>
                                 <div className={`w-2 h-2 rounded-full ${loading ? 'bg-yellow-500' : 'bg-green-500'}`}></div>
                                 <span className="text-xs text-gray-400 uppercase">{loading ? 'Syncing...' : 'Synced'}</span>
                             </div>
