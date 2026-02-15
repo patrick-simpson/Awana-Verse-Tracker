@@ -175,15 +175,53 @@
         const SetupScreen = ({ onComplete }) => {
             const [key, setKey] = useState('');
             const [error, setError] = useState('');
+            const [isGenerating, setIsGenerating] = useState(false);
+            const [generated, setGenerated] = useState(false);
+
+            // Load saved key from localStorage for convenience
+            useEffect(() => {
+                const savedKey = localStorage.getItem('awana_verse_key');
+                if (savedKey) setKey(savedKey);
+            }, []);
+
+            const generateKey = async () => {
+                setIsGenerating(true);
+                setError('');
+                try {
+                    const res = await fetch('https://kvdb.io/', { method: 'POST' });
+                    if (res.ok) {
+                        const newKey = await res.text();
+                        setKey(newKey.trim());
+                        setGenerated(true);
+                        // Briefly highlight the success
+                        setTimeout(() => setGenerated(false), 3000);
+                    } else {
+                        setError('Failed to generate key. Please check your internet.');
+                    }
+                } catch (e) {
+                    setError('Connection error. Could not generate key.');
+                } finally {
+                    setIsGenerating(false);
+                }
+            };
+
+            const copyKey = () => {
+                if (!key) return;
+                navigator.clipboard.writeText(key);
+                alert('Key copied to clipboard! Send this to your other device.');
+            };
 
             const handleSubmit = (mode) => {
                 if (key.length < 3) {
                     setError('Please enter a valid Secret Key (Bucket ID)');
                     return;
                 }
+                // Save key for next time
+                localStorage.setItem('awana_verse_key', key.trim());
+                
                 // Initialize audio context on user interaction
                 audio.init();
-                onComplete(key, mode);
+                onComplete(key.trim(), mode);
             };
 
             return (
@@ -191,40 +229,76 @@
                     <motion.div 
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="glass-panel rounded-3xl p-8 max-w-md w-full text-center"
+                        className="glass-panel rounded-3xl p-6 md:p-8 max-w-md w-full text-center"
                     >
                         <img 
                             src="logo.png" 
                             onError={(e) => e.target.style.display='none'} 
                             alt="Awana Africa" 
-                            className="h-20 mx-auto mb-6 object-contain"
+                            className="h-20 mx-auto mb-4 object-contain"
                         />
-                        <h1 className="font-display text-4xl text-awana-blue mb-2 text-stroke-white drop-shadow-md">
+                        <h1 className="font-display text-4xl text-awana-blue mb-1 text-stroke-white drop-shadow-md">
                             Verse Tracker
                         </h1>
-                        <p className="text-gray-600 mb-8 font-sans">Enter your Church Secret Key to sync.</p>
+                        <p className="text-gray-600 mb-6 font-sans text-sm">Sync your TV Display and Admin Remote</p>
 
-                        <input
-                            type="text"
-                            value={key}
-                            onChange={(e) => setKey(e.target.value)}
-                            placeholder="Secret Key (Bucket ID)"
-                            className="w-full text-center text-xl font-bold p-4 rounded-xl border-2 border-awana-yellow focus:border-awana-green focus:outline-none mb-2 bg-white/80"
-                        />
-                        {error && <p className="text-red-500 text-sm mb-6">{error}</p>}
+                        <div className="bg-white/60 p-4 rounded-xl border border-white/50 shadow-inner mb-6 text-left">
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wide mb-2">
+                                Church Sync Key
+                            </label>
+                            
+                            <div className="flex gap-2 mb-2">
+                                <input
+                                    type="text"
+                                    value={key}
+                                    onChange={(e) => setKey(e.target.value)}
+                                    placeholder="e.g. 8k92..."
+                                    className="flex-1 text-center font-mono text-lg font-bold p-3 rounded-lg border-2 border-awana-yellow focus:border-awana-green focus:outline-none bg-white"
+                                />
+                                {key && (
+                                    <button 
+                                        onClick={copyKey}
+                                        className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 rounded-lg text-sm font-bold transition"
+                                        title="Copy to Clipboard"
+                                    >
+                                        📋
+                                    </button>
+                                )}
+                            </div>
 
-                        <div className="grid grid-cols-1 gap-4 mt-6">
+                            {generated && (
+                                <p className="text-green-600 text-xs font-bold mb-2 animate-bounce">
+                                    ✨ New Key Generated! Write it down!
+                                </p>
+                            )}
+
+                            <div className="text-xs text-gray-600 flex flex-wrap items-center gap-1">
+                                <span>No key yet?</span>
+                                <button 
+                                    onClick={generateKey} 
+                                    disabled={isGenerating}
+                                    className="text-awana-blue hover:text-blue-700 underline font-bold disabled:opacity-50"
+                                >
+                                    {isGenerating ? 'Generating...' : 'Generate New Key'}
+                                </button>
+                                <span className="text-gray-400 italic ml-auto text-[10px]">(Powered by kvdb.io)</span>
+                            </div>
+                        </div>
+
+                        {error && <p className="text-red-500 text-sm mb-6 bg-red-50 p-2 rounded border border-red-200">{error}</p>}
+
+                        <div className="grid grid-cols-1 gap-3">
                             <button 
                                 onClick={() => handleSubmit('display')}
-                                className="bg-awana-green hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 text-lg"
+                                className="bg-awana-green hover:bg-green-600 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] active:scale-95 text-lg flex items-center justify-center gap-2"
                             >
-                                🚀 Launch Display Mode
+                                <span>📺</span> Start Sanctuary Display
                             </button>
                             <button 
                                 onClick={() => handleSubmit('admin')}
-                                className="bg-awana-blue hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-105 active:scale-95 text-lg"
+                                className="bg-awana-blue hover:bg-blue-600 text-white font-bold py-4 rounded-xl shadow-lg transform transition hover:scale-[1.02] active:scale-95 text-lg flex items-center justify-center gap-2"
                             >
-                                🛠️ Launch Admin Mode
+                                <span>📱</span> Open Remote Control
                             </button>
                         </div>
                     </motion.div>
