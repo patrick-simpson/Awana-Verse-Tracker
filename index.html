@@ -130,7 +130,8 @@
                 const res = await fetch(STORAGE_API, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ count: 0, lastUpdated: Date.now() })
+                    body: JSON.stringify({ count: 0, lastUpdated: Date.now() }),
+                    mode: 'cors'
                 });
                 if (!res.ok) throw new Error('Failed to create sync file');
                 
@@ -142,7 +143,7 @@
             },
 
             async read(fileId) {
-                const res = await fetch(`${STORAGE_API}/${fileId}`);
+                const res = await fetch(`${STORAGE_API}/${fileId}`, { mode: 'cors' });
                 if (!res.ok) throw new Error('File not found');
                 return await res.json();
             },
@@ -151,8 +152,20 @@
                 await fetch(`${STORAGE_API}/${fileId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ ...data, lastUpdated: Date.now() })
+                    body: JSON.stringify({ ...data, lastUpdated: Date.now() }),
+                    mode: 'cors'
                 });
+            }
+        };
+
+        // --- LOCAL STORAGE FALLBACK ---
+        const LocalStore = {
+            get: () => {
+                const val = localStorage.getItem('awana_count');
+                return val ? parseInt(val, 10) : 0;
+            },
+            set: (val) => {
+                localStorage.setItem('awana_count', val);
             }
         };
 
@@ -217,7 +230,7 @@
         const VerseTracker = () => {
             const [count, setCount] = useState(0);
             const [fileId, setFileId] = useState(null);
-            const [status, setStatus] = useState('initializing'); // initializing, syncing, offline, ready
+            const [status, setStatus] = useState('initializing'); // initializing, syncing, local, ready
             const [showControls, setShowControls] = useState(false);
             const [userHasInteracted, setUserHasInteracted] = useState(false);
             
@@ -238,17 +251,23 @@
                             // Update URL without reload so user can share it
                             const newUrl = `${window.location.pathname}?file=${id}`;
                             window.history.pushState({ path: newUrl }, '', newUrl);
+                            setStatus('ready');
                         } catch (e) {
-                            console.error("Init failed", e);
-                            setStatus('offline');
+                            console.warn("Init failed, falling back to local storage:", e);
+                            setStatus('local');
                             // Fallback to local mode if internet fails
                             setFileId('local');
+                            // Load initial value from local storage
+                            const localVal = LocalStore.get();
+                            setCount(localVal);
+                            countRef.current = localVal;
                             return;
                         }
+                    } else {
+                        setStatus('ready');
                     }
                     
                     setFileId(id);
-                    setStatus('ready');
                 };
 
                 initSession();
@@ -256,8 +275,23 @@
 
             // 2. Poll for updates
             useEffect(() => {
-                if (!fileId || fileId === 'local') return;
+                if (!fileId) return;
+                
+                // If local mode, we don't poll server, but we could listen to 'storage' event for other tabs
+                if (fileId === 'local') {
+                    const handleStorage = (e) => {
+                        if (e.key === 'awana_count') {
+                            const newVal = parseInt(e.newValue || '0', 10);
+                            if (newVal !== countRef.current) {
+                                handleRemoteUpdate(newVal);
+                            }
+                        }
+                    };
+                    window.addEventListener('storage', handleStorage);
+                    return () => window.removeEventListener('storage', handleStorage);
+                }
 
+                // Remote mode
                 const poll = async () => {
                     try {
                         const data = await SyncService.read(fileId);
@@ -270,7 +304,7 @@
                         setStatus('ready');
                     } catch (e) {
                         console.warn("Poll error", e);
-                        setStatus('offline');
+                        setStatus('error'); // Temporary error, keeps retrying
                     }
                 };
 
@@ -330,17 +364,17 @@
                 
                 if (next > prev) triggerEffects(next);
 
+                // Save to LocalStorage always (as backup or primary)
+                LocalStore.set(next);
+
                 // Sync to cloud
                 if (fileId && fileId !== 'local') {
                     try {
-                        // We fetch first to ensure we don't overwrite a very recent sync from another device
-                        // Simple "last write wins" strategy is usually fine for this scale, 
-                        // but let's try to be atomic if possible or just push the optimistic value.
-                        // Given the requirements, overwriting with our optimistic state is acceptable.
                         await SyncService.write(fileId, { count: next });
                     } catch (e) {
                         console.error("Sync failed", e);
-                        setStatus('offline');
+                        // Don't change status to local permanently, just show error state
+                        setStatus('error');
                     }
                 }
             };
@@ -350,6 +384,8 @@
                     const next = 0;
                     setCount(next);
                     countRef.current = next;
+                    LocalStore.set(next);
+
                     if (fileId && fileId !== 'local') {
                         await SyncService.write(fileId, { count: next });
                     }
@@ -360,6 +396,19 @@
                 navigator.clipboard.writeText(window.location.href);
                 alert("Link copied! Open this URL on your TV or other devices to sync.");
             };
+
+            // Determine status badge color/text
+            const getStatusBadge = () => {
+                switch(status) {
+                    case 'ready': return { color: 'bg-green-400', text: 'Cloud Sync', pulse: true };
+                    case 'local': return { color: 'bg-yellow-400', text: 'Local Mode', pulse: false };
+                    case 'error': return { color: 'bg-red-400', text: 'Reconnecting...', pulse: true };
+                    case 'offline': return { color: 'bg-gray-400', text: 'Offline', pulse: false };
+                    default: return { color: 'bg-blue-400', text: 'Loading...', pulse: true };
+                }
+            };
+
+            const badge = getStatusBadge();
 
             return (
                 <div className="relative min-h-screen brand-gradient flex flex-col items-center justify-center overflow-hidden font-sans">
@@ -380,14 +429,14 @@
                         <div className="flex flex-col items-end gap-2 pointer-events-auto">
                             {/* Status Pill */}
                             <div className="flex items-center gap-2 bg-black/20 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 shadow-lg">
-                                <div className={`w-2.5 h-2.5 rounded-full ${status === 'ready' ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+                                <div className={`w-2.5 h-2.5 rounded-full ${badge.color} ${badge.pulse ? 'animate-pulse' : ''}`}></div>
                                 <span className="text-white text-[10px] font-bold uppercase tracking-widest">
-                                    {status === 'ready' ? 'Cloud Sync' : status === 'offline' ? 'Offline' : 'Loading...'}
+                                    {badge.text}
                                 </span>
                             </div>
 
-                            {/* Share Button */}
-                            {fileId && (
+                            {/* Share Button (Only if cloud sync is active) */}
+                            {fileId && fileId !== 'local' && (
                                 <button 
                                     onClick={copyShareLink}
                                     className="flex items-center gap-2 bg-white/90 hover:bg-white text-awana-blue px-3 py-1.5 rounded-full text-xs font-bold shadow-lg transition-transform hover:scale-105 active:scale-95"
