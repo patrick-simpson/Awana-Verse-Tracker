@@ -61,7 +61,7 @@
 
     <!-- MAIN APP LOGIC -->
     <script type="text/babel" data-type="module">
-      import React, { useState, useEffect, useRef } from "react";
+      import React, { useState, useEffect, useRef, useLayoutEffect } from "react";
       import { createRoot } from "react-dom/client";
       import { initializeApp } from "firebase/app";
       import { getDatabase, ref, onValue, set } from "firebase/database";
@@ -76,6 +76,7 @@
 
       const THEMES = [
         {
+          id: "savanna",
           name: "Sunrise Savanna",
           gradient: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)",
           textColor: "#FFFFFF",
@@ -84,6 +85,7 @@
           animationType: "drop",
         },
         {
+          id: "river",
           name: "River Crossing",
           gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
           textColor: "#FFFFFF",
@@ -92,6 +94,7 @@
           animationType: "slide",
         },
         {
+          id: "jungle",
           name: "Jungle Trek",
           gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
           textColor: "#FFFFFF",
@@ -100,6 +103,7 @@
           animationType: "pop",
         },
         {
+          id: "village",
           name: "Village Build",
           gradient: "linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)",
           textColor: "#5D4037",
@@ -108,6 +112,7 @@
           animationType: "spin",
         },
         {
+          id: "celebration",
           name: "Celebration Night",
           gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
           textColor: "#FFD700",
@@ -364,7 +369,159 @@
         );
       };
 
-      // 3. Main App
+      // 3. Background FX
+      const BackgroundFX = ({ theme }) => {
+        const containerRef = useRef(null);
+
+        useLayoutEffect(() => {
+          const container = containerRef.current;
+          if (!container) return;
+
+          container.innerHTML = '';
+          const particles = [];
+          const count = 30;
+
+          // Create Generic Particles
+          for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            // Basic styling, specific styling handled in GSAP
+            p.style.position = 'absolute';
+            p.style.opacity = '0';
+            p.style.pointerEvents = 'none';
+            p.style.willChange = 'transform, opacity';
+            container.appendChild(p);
+            particles.push(p);
+          }
+
+          const ctx = gsap.context(() => {
+            if (theme.id === 'savanna') {
+              // Floating Dust / Heat Haze
+              particles.forEach((p, i) => {
+                gsap.set(p, {
+                  width: gsap.utils.random(5, 20),
+                  height: gsap.utils.random(5, 20),
+                  backgroundColor: '#FFF',
+                  borderRadius: '50%',
+                  x: gsap.utils.random(0, window.innerWidth),
+                  y: gsap.utils.random(0, window.innerHeight),
+                  opacity: gsap.utils.random(0.1, 0.4)
+                });
+                gsap.to(p, {
+                  y: '-=200',
+                  opacity: 0,
+                  duration: gsap.utils.random(5, 10),
+                  repeat: -1,
+                  ease: 'none',
+                  delay: gsap.utils.random(0, 5)
+                });
+              });
+            } else if (theme.id === 'river') {
+              // Flowing Lines
+              particles.forEach((p, i) => {
+                 gsap.set(p, {
+                  width: gsap.utils.random(100, 300),
+                  height: gsap.utils.random(2, 4),
+                  backgroundColor: '#FFF',
+                  borderRadius: '2px',
+                  x: gsap.utils.random(-100, window.innerWidth),
+                  y: gsap.utils.random(0, window.innerHeight),
+                  opacity: gsap.utils.random(0.1, 0.3)
+                });
+                gsap.to(p, {
+                  x: '+=500',
+                  opacity: 0,
+                  duration: gsap.utils.random(8, 15),
+                  repeat: -1,
+                  ease: 'none',
+                  delay: gsap.utils.random(0, 5)
+                });
+              });
+            } else if (theme.id === 'jungle') {
+              // Fireflies
+              particles.forEach((p, i) => {
+                 gsap.set(p, {
+                  width: gsap.utils.random(4, 8),
+                  height: gsap.utils.random(4, 8),
+                  backgroundColor: '#ccff00',
+                  borderRadius: '50%',
+                  boxShadow: '0 0 10px #ccff00',
+                  x: gsap.utils.random(0, window.innerWidth),
+                  y: gsap.utils.random(0, window.innerHeight),
+                  opacity: 0
+                });
+                // Blink
+                gsap.to(p, {
+                  opacity: gsap.utils.random(0.3, 0.8),
+                  duration: gsap.utils.random(1, 2),
+                  yoyo: true,
+                  repeat: -1,
+                  ease: 'sine.inOut',
+                  delay: gsap.utils.random(0, 2)
+                });
+                // Move
+                gsap.to(p, {
+                  x: `+=${gsap.utils.random(-100, 100)}`,
+                  y: `+=${gsap.utils.random(-100, 100)}`,
+                  duration: gsap.utils.random(10, 20),
+                  repeat: -1,
+                  yoyo: true,
+                  ease: 'sine.inOut'
+                });
+              });
+            } else if (theme.id === 'village') {
+              // Rising Squares
+              particles.forEach((p, i) => {
+                const size = gsap.utils.random(20, 50);
+                gsap.set(p, {
+                  width: size,
+                  height: size,
+                  border: '2px solid rgba(255,255,255,0.2)',
+                  x: gsap.utils.random(0, window.innerWidth),
+                  y: window.innerHeight + 50,
+                  rotation: gsap.utils.random(0, 360),
+                  opacity: 0.3
+                });
+                gsap.to(p, {
+                  y: -100,
+                  rotation: '+=90',
+                  duration: gsap.utils.random(10, 20),
+                  repeat: -1,
+                  ease: 'none',
+                  delay: gsap.utils.random(0, 10)
+                });
+              });
+            } else if (theme.id === 'celebration') {
+              // Falling Confetti
+              particles.forEach((p, i) => {
+                 const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#FFF'];
+                 gsap.set(p, {
+                  width: gsap.utils.random(10, 15),
+                  height: gsap.utils.random(5, 10),
+                  backgroundColor: gsap.utils.random(colors),
+                  x: gsap.utils.random(0, window.innerWidth),
+                  y: -50,
+                  rotation: gsap.utils.random(0, 360),
+                });
+                gsap.to(p, {
+                  y: window.innerHeight + 50,
+                  rotationX: '+=360',
+                  rotationY: '+=360',
+                  duration: gsap.utils.random(3, 6),
+                  repeat: -1,
+                  ease: 'linear',
+                  delay: gsap.utils.random(0, 5)
+                });
+              });
+            }
+          }, containerRef);
+
+          return () => ctx.revert();
+        }, [theme]);
+
+        return <div ref={containerRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }} />;
+      }
+
+      // 4. Main App
       const App = () => {
         const [hasStarted, setHasStarted] = useState(false);
         const [count, setCount] = useState(0);
@@ -479,36 +636,37 @@
             const tl = window.gsap.timeline();
             window.gsap.set(numberRef.current, { clearProps: "all" });
 
+            // Refined Animations with Squash/Stretch and smoother easing
             switch (currentTheme.animationType) {
               case "drop":
                  tl.fromTo(numberRef.current, 
-                   { y: -100, opacity: 0, scale: 1.5 }, 
-                   { y: 0, opacity: 1, scale: 1, duration: 0.8, ease: "bounce.out" }
+                   { y: -150, scaleY: 1.5, scaleX: 0.8, opacity: 0 }, 
+                   { y: 0, scaleY: 1, scaleX: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }
                  );
                  break;
               case "slide":
                 tl.fromTo(numberRef.current,
-                  { x: 200, opacity: 0, skewX: -20 },
-                  { x: 0, opacity: 1, skewX: 0, duration: 0.6, ease: "power2.out" }
+                  { x: 300, skewX: -30, opacity: 0 },
+                  { x: 0, skewX: 0, opacity: 1, duration: 0.5, ease: "power4.out" }
                 );
                 break;
               case "pop":
                 tl.fromTo(numberRef.current,
-                  { scale: 0, rotation: -45 },
-                  { scale: 1, rotation: 0, duration: 0.6, ease: "elastic.out(1, 0.5)" }
+                  { scale: 0.2, rotation: -20, opacity: 0 },
+                  { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: "elastic.out(1.2, 0.5)" }
                 );
                 break;
               case "spin":
                 tl.fromTo(numberRef.current,
-                  { rotationY: 90, opacity: 0 },
-                  { rotationY: 0, opacity: 1, duration: 0.8, ease: "back.out(1.7)" }
+                  { rotationX: 90, opacity: 0, scale: 0.8 },
+                  { rotationX: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }
                 );
                 break;
               case "zoom":
               default:
                 tl.fromTo(numberRef.current,
-                  { scale: 3, opacity: 0, filter: "blur(10px)" },
-                  { scale: 1, opacity: 1, filter: "blur(0px)", duration: 1, ease: "expo.out" }
+                  { scale: 3, opacity: 0, filter: "blur(20px)" },
+                  { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.6, ease: "circ.out" }
                 );
                 break;
             }
@@ -539,6 +697,9 @@
               overflow: "hidden",
             }}
           >
+            {/* Ambient Background */}
+            <BackgroundFX theme={currentTheme} />
+
             {/* Background Icon */}
             <div
               style={{
@@ -548,6 +709,7 @@
                 pointerEvents: "none",
                 userSelect: "none",
                 animation: "float 6s ease-in-out infinite",
+                zIndex: 2
               }}
             >
               {currentTheme.icon}
@@ -568,7 +730,7 @@
                 margin: 0, 
                 fontSize: "2rem", 
                 textTransform: "uppercase", 
-                letterSpacing: "4px",
+                letterSpacing: "4px", 
                 textShadow: "0 2px 10px rgba(0,0,0,0.2)"
               }}>
                 Verses Recited
@@ -587,7 +749,8 @@
                 zIndex: 10,
                 lineHeight: 1,
                 cursor: "default",
-                userSelect: "none"
+                userSelect: "none",
+                willChange: "transform, opacity"
               }}
             >
               {count}
