@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "./firebase";
@@ -19,12 +18,14 @@ const App = () => {
   const bgRef = useRef(null);
   const audioContextRef = useRef(null);
 
+  // Safe theme indexing
   const themeIndex = Math.min(Math.floor(count / 100), THEMES.length - 1);
   const currentTheme = THEMES[themeIndex] || THEMES[0];
 
   // Init Audio
   const initAudio = () => {
     try {
+      // Cross-browser AudioContext creation
       const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioContextCtor) {
         audioContextRef.current = new AudioContextCtor();
@@ -56,6 +57,7 @@ const App = () => {
         // Only update if valid number
         if (typeof val === 'number') {
           setCount((prev) => {
+            // Keep track of prev for animation detection logic in the other effect
             setPrevCount(prev);
             return val;
           });
@@ -73,14 +75,9 @@ const App = () => {
 
   // Update Handler
   const handleUpdateCount = (newValue) => {
-    // Only update Firebase. Do NOT update local state immediately.
-    // The state will be updated via the onValue listener when the server acknowledges the change.
     if (db && !isOffline) {
       set(ref(db, "verse_count"), newValue).catch((err) => {
         console.error("Failed to sync to firebase", err);
-        // If sync fails, we could choose to go offline and update local, 
-        // but strictly following "only increment if server feedback", we assume failure means no update.
-        // However, to prevent broken UI state on spotty connections, we switch to offline mode.
         setIsOffline(true);
         setCount(newValue); // Fallback for offline
       });
@@ -167,20 +164,21 @@ const App = () => {
         overflow: "hidden",
       }}
     >
-      {/* Ambient Particles */}
+      {/* Ambient Particles & Video */}
       <BackgroundFX theme={currentTheme} />
 
       {/* Background Floating Icon */}
       <div
         style={{
           position: "absolute",
-          fontSize: "50vh",
+          fontSize: "clamp(200px, 50vw, 500px)",
           opacity: 0.15,
           pointerEvents: "none",
           userSelect: "none",
           animation: "float 6s ease-in-out infinite",
           zIndex: 2,
-          filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.3))'
+          filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.3))',
+          transition: "all 1s ease"
         }}
       >
         {currentTheme.icon}
@@ -190,7 +188,7 @@ const App = () => {
       <div
         style={{
           position: "absolute",
-          top: "5%",
+          top: "8%",
           textAlign: "center",
           color: currentTheme.textColor,
           zIndex: 20,
@@ -199,11 +197,12 @@ const App = () => {
       >
         <h2 style={{ 
           margin: 0, 
-          fontSize: "clamp(1.5rem, 4vw, 2.5rem)", 
+          fontSize: "clamp(1.2rem, 3vw, 2rem)", 
           textTransform: "uppercase", 
-          letterSpacing: "4px", 
+          letterSpacing: "0.2em", 
           textShadow: "0 2px 10px rgba(0,0,0,0.2)",
-          opacity: 0.9
+          opacity: 0.9,
+          fontWeight: 600
         }}>
           Verses Recited
         </h2>

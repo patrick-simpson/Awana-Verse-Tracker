@@ -1,7 +1,7 @@
 
 // !!! UPDATE THESE ON EVERY CHANGE !!!
-export const APP_VERSION = "1.4.0";
-export const LAST_MODIFIED = "Feb 24, 2025 02:00 PM";
+export const APP_VERSION = "1.4.1";
+export const LAST_MODIFIED = "Feb 24, 2025 02:15 PM";
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 export const THEMES = [

@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
@@ -13,10 +12,10 @@ const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
           position: "fixed",
           bottom: "20px",
           right: "20px",
-          width: "60px",
-          height: "60px",
+          width: "50px",
+          height: "50px",
           borderRadius: "50%",
-          backgroundColor: "rgba(255,255,255,0.15)",
+          backgroundColor: "rgba(0,0,0,0.3)",
           backdropFilter: "blur(5px)",
           border: "1px solid rgba(255,255,255,0.2)",
           cursor: "pointer",
@@ -25,40 +24,43 @@ const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "28px",
-          color: "white",
+          fontSize: "20px",
+          color: "rgba(255,255,255,0.7)",
           boxShadow: "0 4px 10px rgba(0,0,0,0.2)"
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)";
-          e.currentTarget.style.transform = "rotate(90deg)";
+          e.currentTarget.style.color = "white";
+          e.currentTarget.style.transform = "rotate(90deg) scale(1.1)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)";
-          e.currentTarget.style.transform = "rotate(0deg)";
+          e.currentTarget.style.backgroundColor = "rgba(0,0,0,0.3)";
+          e.currentTarget.style.color = "rgba(255,255,255,0.7)";
+          e.currentTarget.style.transform = "rotate(0deg) scale(1)";
         }}
+        title="Admin Controls"
       >
         ⚙️
       </button>
     );
   }
 
-  // Fixed: Added explicit type React.CSSProperties
   const containerStyle: React.CSSProperties = {
     position: "fixed",
     bottom: "20px",
     right: "20px",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.95)",
+    backdropFilter: "blur(20px)",
     padding: "25px",
     borderRadius: "20px",
-    boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
+    boxShadow: "0 20px 50px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.5)",
     zIndex: 101,
     color: "#333",
-    width: "320px",
+    width: "300px",
     animation: "slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
   };
 
-  const adminButtonStyle = {
+  const adminButtonStyle: React.CSSProperties = {
     padding: "12px",
     border: "none",
     borderRadius: "12px",
@@ -73,20 +75,21 @@ const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
   return (
     <div style={containerStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
-        <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Control Panel</h3>
+        <h3 style={{ margin: 0, fontSize: "1.1rem", fontWeight: "800", letterSpacing: "-0.5px" }}>Control Panel</h3>
         <button
           onClick={() => setIsOpen(false)}
           style={{ 
               border: "none", 
               background: "#eee", 
               borderRadius: "50%",
-              width: "30px",
-              height: "30px",
+              width: "28px",
+              height: "28px",
               cursor: "pointer", 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              fontWeight: 'bold'
+              fontWeight: 'bold',
+              color: '#555'
           }}
         >
           ✕
@@ -120,7 +123,9 @@ const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
             border: "2px solid #eee",
             borderRadius: "12px",
             fontSize: "16px",
-            outline: "none"
+            outline: "none",
+            backgroundColor: "#f9f9f9",
+            fontWeight: "600"
           }}
         />
         <button
@@ -141,20 +146,20 @@ const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
             onUpdateCount(0);
           }
         }}
-        style={{ ...adminButtonStyle, width: "100%", backgroundColor: "#ffebee", color: "#c62828" }}
+        style={{ ...adminButtonStyle, width: "100%", backgroundColor: "#FFEBEE", color: "#D32F2F" }}
       >
         Reset Counter
       </button>
 
-      <div style={{ marginTop: "20px", fontSize: "12px", color: "#888", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+      <div style={{ marginTop: "20px", fontSize: "11px", color: "#888", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", fontWeight: "600" }}>
         <span style={{ 
-            width: "10px", 
-            height: "10px", 
+            width: "8px", 
+            height: "8px", 
             borderRadius: "50%", 
-            backgroundColor: isOffline ? "#ff4444" : "#00C851",
-            boxShadow: `0 0 10px ${isOffline ? "#ff4444" : "#00C851"}`
+            backgroundColor: isOffline ? "#FF5252" : "#4CAF50",
+            boxShadow: `0 0 6px ${isOffline ? "#FF5252" : "#4CAF50"}`
         }}></span>
-        {isOffline ? "Offline Mode (Local Only)" : "Live Database Connection"}
+        {isOffline ? "LOCAL MODE (OFFLINE)" : "LIVE DATABASE"}
       </div>
     </div>
   );

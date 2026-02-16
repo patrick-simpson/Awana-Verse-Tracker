@@ -30,7 +30,7 @@
         height: 100%;
       }
       
-      /* Critical Styles to prevent FOUC (Flash of Unstyled Content) */
+      /* Critical Styles */
       .counter-text {
         font-size: 15rem;
         font-weight: 900;
@@ -40,8 +40,8 @@
         user-select: none;
         will-change: transform, opacity;
         text-align: center;
-        /* Responsive sizing */
         font-variant-numeric: tabular-nums;
+        transition: color 1s ease;
       }
       @media (max-width: 1024px) {
         .counter-text { font-size: 10rem; }
@@ -80,7 +80,7 @@
       }
     </style>
 
-    <!-- Import Map -->
+    <!-- Import Map: FIXED to remove conflicts -->
     <script type="importmap">
 {
   "imports": {
