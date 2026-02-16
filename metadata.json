@@ -1,5 +1,4 @@
 {
   "name": "Awana Africa Verse Tracker",
-  "description": "A TV-production quality, real-time verse tracking dashboard for sanctuary displays. Features synchronized state via KVDB, synthesized audio cues, and high-energy animations.",
-  "requestFramePermissions": []
+  "description": "A TV-production quality, real-time verse tracking dashboard for sanctuary displays. Features synchronized state via KVDB, synthesized audio cues, and high-energy animations."
 }
