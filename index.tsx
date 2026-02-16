@@ -79,15 +79,6 @@ const THEMES: Theme[] = [
 // --- FIREBASE INITIALIZATION ---
 // !!! IMPORTANT: PASTE YOUR FIREBASE CONFIG HERE !!!
 const firebaseConfig = {
-  // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
   apiKey: "AIzaSyCk0TR4SUFUvsdpIDGmH-0CzbZQQcZBL30",
   authDomain: "awana-africa-tracker.firebaseapp.com",
   databaseURL: "https://awana-africa-tracker-default-rtdb.firebaseio.com",
@@ -96,19 +87,6 @@ const firebaseConfig = {
   messagingSenderId: "825987576771",
   appId: "1:825987576771:web:f293d618dad3ded2c70376",
   measurementId: "G-1SMFYMQMNW"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-  // Example config - REPLACE THESE VALUES with yours from Firebase Console
-  apiKey: "AIzaSyDummyKey-12345",
-  authDomain: "dummy-project.firebaseapp.com",
-  databaseURL: "https://awana-africa-default-rtdb.firebaseio.com", // Ensure this is correct
-  projectId: "dummy-project",
-  storageBucket: "dummy-project.appspot.com",
-  messagingSenderId: "123456789",
-  appId: "1:123456789:web:dummy",
 };
 
 // Initialize Firebase safely
