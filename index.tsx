@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
-import ReactDOM from "react-dom/client";
+import { createRoot } from "react-dom/client";
+import { initializeApp } from "firebase/app";
+import { getDatabase, ref, onValue, set } from "firebase/database";
 
-// --- TYPES & INTERFACES ---
+// --- TYPES ---
 declare global {
   interface Window {
     gsap: any;
-    firebase: any;
   }
 }
 
@@ -19,56 +20,47 @@ interface Theme {
 }
 
 // --- CONFIGURATION ---
-
-// 1. AUDIO ASSETS (Placeholders)
 const AUDIO_URLS = {
-  pop: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3", // Short click/pop
-  celebrate: "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3", // Success chime
+  pop: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
+  celebrate: "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3",
 };
 
-// 2. THEMES (The Journey)
-// Changes every 100 verses
 const THEMES: Theme[] = [
   {
-    // 0 - 99
     name: "Sunrise Savanna",
-    gradient: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)", // Orange/Red
+    gradient: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)",
     textColor: "#FFFFFF",
-    accentColor: "#FFD700", // Gold
+    accentColor: "#FFD700",
     icon: "🌅",
     animationType: "drop",
   },
   {
-    // 100 - 199
     name: "River Crossing",
-    gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)", // Blue/Cyan
+    gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
     textColor: "#FFFFFF",
     accentColor: "#003366",
     icon: "🌊",
     animationType: "slide",
   },
   {
-    // 200 - 299
     name: "Jungle Trek",
-    gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)", // Green
+    gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
     textColor: "#FFFFFF",
     accentColor: "#0b4d0b",
     icon: "🌴",
     animationType: "pop",
   },
   {
-    // 300 - 399
     name: "Village Build",
-    gradient: "linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)", // Earthy/Pastel
+    gradient: "linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)",
     textColor: "#5D4037",
     accentColor: "#8D6E63",
     icon: "🏘️",
     animationType: "spin",
   },
   {
-    // 400+
     name: "Celebration Night",
-    gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", // Purple
+    gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
     textColor: "#FFD700",
     accentColor: "#E1BEE7",
     icon: "✨",
@@ -76,8 +68,7 @@ const THEMES: Theme[] = [
   },
 ];
 
-// --- FIREBASE INITIALIZATION ---
-// !!! IMPORTANT: PASTE YOUR FIREBASE CONFIG HERE !!!
+// --- FIREBASE INIT ---
 const firebaseConfig = {
   apiKey: "AIzaSyCk0TR4SUFUvsdpIDGmH-0CzbZQQcZBL30",
   authDomain: "awana-africa-tracker.firebaseapp.com",
@@ -89,24 +80,21 @@ const firebaseConfig = {
   measurementId: "G-1SMFYMQMNW"
 };
 
-// Initialize Firebase safely
 let db: any = null;
+let firebaseInitialized = false;
+
 try {
-  if (window.firebase) {
-    if (!window.firebase.apps.length) {
-      window.firebase.initializeApp(firebaseConfig);
-    }
-    db = window.firebase.database();
-  } else {
-    console.error("Firebase SDK not loaded");
-  }
+  const app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  firebaseInitialized = true;
+  console.log("Firebase initialized successfully");
 } catch (e) {
-  console.error("Firebase Init Error:", e);
+  console.error("Firebase failed to load. Running in local offline mode.", e);
 }
 
 // --- COMPONENTS ---
 
-// 1. Start Overlay (Audio Context)
+// 1. Start Overlay
 const StartOverlay = ({ onStart }: { onStart: () => void }) => {
   return (
     <div
@@ -123,7 +111,7 @@ const StartOverlay = ({ onStart }: { onStart: () => void }) => {
         backdropFilter: "blur(10px)",
       }}
     >
-      <h1 style={{ marginBottom: "20px", textAlign: "center" }}>
+      <h1 style={{ marginBottom: "20px", textAlign: "center", fontFamily: 'Poppins, sans-serif' }}>
         Awana Africa<br />Verse Counter
       </h1>
       <button
@@ -153,20 +141,15 @@ const StartOverlay = ({ onStart }: { onStart: () => void }) => {
 // 2. Admin Panel
 const AdminPanel = ({
   currentCount,
-  setCount,
+  onUpdateCount,
+  isOffline
 }: {
   currentCount: number;
-  setCount: (n: number) => void;
+  onUpdateCount: (n: number) => void;
+  isOffline: boolean;
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [customVal, setCustomVal] = useState("");
-
-  const handleUpdate = (newValue: number) => {
-    if (db) {
-      db.ref("verse_count").set(newValue);
-    }
-    // Optimistic update happens via listener
-  };
 
   if (!isOpen) {
     return (
@@ -176,26 +159,27 @@ const AdminPanel = ({
           position: "fixed",
           bottom: "20px",
           right: "20px",
-          width: "40px",
-          height: "40px",
+          width: "50px",
+          height: "50px",
           borderRadius: "50%",
           backgroundColor: "rgba(255,255,255,0.2)",
           border: "none",
           cursor: "pointer",
           zIndex: 100,
-          opacity: 0.1, // Hidden by default
-          transition: "opacity 0.3s, background-color 0.3s",
+          opacity: 0.4,
+          transition: "all 0.3s",
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          fontSize: "20px",
+          fontSize: "24px",
+          color: "white"
         }}
         onMouseEnter={(e) => {
           e.currentTarget.style.opacity = "1";
-          e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.8)";
+          e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.4)";
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.opacity = "0.1";
+          e.currentTarget.style.opacity = "0.4";
           e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)";
         }}
       >
@@ -213,17 +197,18 @@ const AdminPanel = ({
         backgroundColor: "white",
         padding: "20px",
         borderRadius: "15px",
-        boxShadow: "0 10px 30px rgba(0,0,0,0.3)",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
         zIndex: 101,
         color: "#333",
         width: "300px",
+        animation: "slideUp 0.3s ease-out"
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
         <h3 style={{ margin: 0 }}>Admin Control</h3>
         <button
           onClick={() => setIsOpen(false)}
-          style={{ border: "none", background: "none", cursor: "pointer", fontSize: "16px" }}
+          style={{ border: "none", background: "none", cursor: "pointer", fontSize: "16px", padding: "5px" }}
         >
           ✕
         </button>
@@ -231,13 +216,13 @@ const AdminPanel = ({
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "15px" }}>
         <button
-          onClick={() => handleUpdate(currentCount + 1)}
+          onClick={() => onUpdateCount(currentCount + 1)}
           style={adminButtonStyle}
         >
           +1 Verse
         </button>
         <button
-          onClick={() => handleUpdate(currentCount + 5)}
+          onClick={() => onUpdateCount(currentCount + 5)}
           style={adminButtonStyle}
         >
           +5 Verses
@@ -255,12 +240,13 @@ const AdminPanel = ({
             padding: "8px",
             border: "1px solid #ccc",
             borderRadius: "5px",
+            fontSize: "16px"
           }}
         />
         <button
           onClick={() => {
              const val = parseInt(customVal);
-             if(!isNaN(val)) handleUpdate(currentCount + val);
+             if(!isNaN(val)) onUpdateCount(currentCount + val);
              setCustomVal("");
           }}
           style={adminButtonStyle}
@@ -272,7 +258,7 @@ const AdminPanel = ({
       <button
         onClick={() => {
           if (confirm("Are you sure you want to RESET the count to 0?")) {
-            handleUpdate(0);
+            onUpdateCount(0);
           }
         }}
         style={{ ...adminButtonStyle, backgroundColor: "#ff4444", color: "white" }}
@@ -280,9 +266,16 @@ const AdminPanel = ({
         Reset Counter
       </button>
 
-      <div style={{ marginTop: "10px", fontSize: "12px", color: "#888", textAlign: "center" }}>
-        Current: {currentCount} | Status: {db ? "Online" : "Offline (Demo)"}
+      <div style={{ marginTop: "15px", fontSize: "12px", color: "#888", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+        <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: isOffline ? "#ff4444" : "#00C851" }}></span>
+        {isOffline ? "Offline Mode (Local Only)" : "Connected to Database"}
       </div>
+      <style>{`
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 };
@@ -290,18 +283,20 @@ const AdminPanel = ({
 const adminButtonStyle = {
   padding: "10px",
   border: "none",
-  borderRadius: "5px",
-  backgroundColor: "#eee",
+  borderRadius: "8px",
+  backgroundColor: "#f0f0f0",
   cursor: "pointer",
   fontWeight: "600",
-  transition: "background 0.2s",
+  transition: "all 0.2s",
+  boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
 };
 
-// 3. Main Application
+// 3. Main App
 const App = () => {
   const [hasStarted, setHasStarted] = useState(false);
   const [count, setCount] = useState(0);
   const [prevCount, setPrevCount] = useState(0);
+  const [isOffline, setIsOffline] = useState(!firebaseInitialized);
   
   // Refs
   const numberRef = useRef<HTMLDivElement>(null);
@@ -310,28 +305,32 @@ const App = () => {
   const popBufferRef = useRef<AudioBuffer | null>(null);
   const celebrateBufferRef = useRef<AudioBuffer | null>(null);
 
-  // Derived State
+  // Computed Values
   const themeIndex = Math.min(Math.floor(count / 100), THEMES.length - 1);
   const currentTheme = THEMES[themeIndex] || THEMES[0];
 
   // 1. Audio System
   const initAudio = async () => {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    audioContextRef.current = new AudioContext();
+    try {
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
+      audioContextRef.current = new AudioContext();
 
-    const loadSound = async (url: string) => {
-      try {
-        const response = await fetch(url);
-        const arrayBuffer = await response.arrayBuffer();
-        return await audioContextRef.current?.decodeAudioData(arrayBuffer);
-      } catch (e) {
-        console.warn("Audio load failed", e);
-        return null;
-      }
-    };
+      const loadSound = async (url: string) => {
+        try {
+          const response = await fetch(url);
+          const arrayBuffer = await response.arrayBuffer();
+          return await audioContextRef.current?.decodeAudioData(arrayBuffer);
+        } catch (e) {
+          console.warn("Audio load failed", e);
+          return null;
+        }
+      };
 
-    popBufferRef.current = await loadSound(AUDIO_URLS.pop);
-    celebrateBufferRef.current = await loadSound(AUDIO_URLS.celebrate);
+      popBufferRef.current = await loadSound(AUDIO_URLS.pop);
+      celebrateBufferRef.current = await loadSound(AUDIO_URLS.celebrate);
+    } catch (e) {
+      console.error("Audio init error", e);
+    }
     
     setHasStarted(true);
   };
@@ -339,7 +338,6 @@ const App = () => {
   const playSound = (type: "pop" | "celebrate") => {
     if (!audioContextRef.current) return;
     
-    // Resume context if suspended (browser policy)
     if (audioContextRef.current.state === "suspended") {
       audioContextRef.current.resume();
     }
@@ -353,45 +351,72 @@ const App = () => {
     }
   };
 
-  // 2. Firebase Sync
+  // 2. Firebase Sync & Fallback
   useEffect(() => {
-    if (!db) return;
+    if (!db) {
+      setIsOffline(true);
+      return;
+    }
 
-    const countRef = db.ref("verse_count");
-    countRef.on("value", (snapshot: any) => {
-      const val = snapshot.val();
-      if (val !== null) {
-        setCount((prev) => {
-          setPrevCount(prev);
-          return val;
-        });
-      }
-    });
+    try {
+      const countRef = ref(db, "verse_count");
+      
+      // Subscribe to changes
+      const unsubscribe = onValue(countRef, (snapshot) => {
+        setIsOffline(false); // If we get data, we are online
+        const val = snapshot.val();
+        if (typeof val === 'number') {
+          setCount((prev) => {
+            setPrevCount(prev);
+            return val;
+          });
+        }
+      }, (error) => {
+        console.error("Firebase Read Error:", error);
+        setIsOffline(true);
+      });
 
-    return () => countRef.off();
+      return () => unsubscribe();
+    } catch (err) {
+      console.error("Firebase Connection Error:", err);
+      setIsOffline(true);
+    }
   }, []);
 
-  // 3. Animations & Effects
+  // 3. Handle Updates (Optimistic UI)
+  const handleUpdateCount = (newValue: number) => {
+    // 1. Update Local State Immediately (Optimistic)
+    setPrevCount(count);
+    setCount(newValue);
+
+    // 2. Try to Sync to Cloud
+    if (db && !isOffline) {
+      set(ref(db, "verse_count"), newValue).catch((err) => {
+        console.error("Failed to sync to firebase, staying local", err);
+        setIsOffline(true);
+      });
+    }
+  };
+
+  // 4. Animations & Effects
   useEffect(() => {
     if (!hasStarted) return;
     if (count === prevCount) return;
 
-    // Determine event type
+    // Detect direction and milestone
     const isLevelUp = Math.floor(count / 100) > Math.floor(prevCount / 100);
     const isIncrease = count > prevCount;
 
-    // Audio
+    // Play Sounds
     if (isLevelUp) {
       playSound("celebrate");
     } else if (isIncrease) {
       playSound("pop");
     }
 
-    // Animation Logic via GSAP
+    // Run GSAP Animation
     if (numberRef.current && window.gsap) {
       const tl = window.gsap.timeline();
-      
-      // Reset
       window.gsap.set(numberRef.current, { clearProps: "all" });
 
       switch (currentTheme.animationType) {
@@ -428,11 +453,12 @@ const App = () => {
           break;
       }
     }
-
-    // Update prevCount ref after effect
-    setPrevCount(count);
+    
+    // Sync refs for next comparison if update came from external source
+    if (count !== prevCount) {
+        setPrevCount(count);
+    }
   }, [count, hasStarted, currentTheme]);
-
 
   if (!hasStarted) {
     return <StartOverlay onStart={initAudio} />;
@@ -476,6 +502,7 @@ const App = () => {
           textAlign: "center",
           color: currentTheme.textColor,
           opacity: 0.9,
+          zIndex: 20
         }}
       >
         <h2 style={{ 
@@ -503,15 +530,21 @@ const App = () => {
           textShadow: `0 10px 30px rgba(0,0,0,0.3), 4px 4px 0px ${currentTheme.accentColor}`,
           zIndex: 10,
           lineHeight: 1,
+          cursor: "default",
+          userSelect: "none"
         }}
       >
         {count}
       </div>
 
       {/* Admin Interface */}
-      <AdminPanel currentCount={count} setCount={setCount} />
+      <AdminPanel 
+        currentCount={count} 
+        onUpdateCount={handleUpdateCount} 
+        isOffline={isOffline}
+      />
       
-      {/* Global Styles for Animations */}
+      {/* Global Styles */}
       <style>{`
         @keyframes float {
           0% { transform: translateY(0px); }
@@ -523,5 +556,9 @@ const App = () => {
   );
 };
 
-const root = ReactDOM.createRoot(document.getElementById("root") as HTMLElement);
-root.render(<App />);
+// Mount
+const rootElement = document.getElementById("root");
+if (rootElement) {
+    const root = createRoot(rootElement);
+    root.render(<App />);
+}
