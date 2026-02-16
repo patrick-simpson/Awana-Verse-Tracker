@@ -8,6 +8,7 @@
 - **Typography:** Uses 'Nunito' for the massive counter numbers (rounded, friendly, legible) and 'Poppins' for UI elements (clean, modern).
 - **Animations:** Powered by GSAP. Animations are designed to be "TV Production Quality"—smooth, physics-based (elastic, bounce), and synchronized with state changes.
 - **Particles:** A `BackgroundFX` component generates ambient particles specific to the current theme (e.g., dust for Savanna, fireflies for Jungle) to add depth without distracting from the core number.
+- **Video Backgrounds:** (New in v1.4.0) Subtle, looping video layers provide texture and immersion. They are blended with the theme gradients to ensure the text remains the focal point.
 
 ### 2. User Experience (UX)
 - **Zero-Config Start:** The app launches into a "Start Overlay" to handle browser Autoplay policies. This ensures audio contexts are resumed only after user interaction.
@@ -23,6 +24,11 @@
 ---
 
 ## Changelog
+
+### v1.4.0 - Feb 24, 2025 (02:00 PM)
+- **Feature:** Added royalty-free placeholder video backgrounds for all themes.
+- **UX:** Updated `BackgroundFX` to render a subtle, looping video layer beneath the particle effects.
+- **Design:** Implemented opacity and blend modes on videos to ensure they complement the theme gradients rather than overpowering them.
 
 ### v1.3.1 - Feb 24, 2025 (01:45 PM)
 - **CRITICAL FIX:** Removed TypeScript syntax (e.g., `as any`, `: React.CSSProperties`) from `.tsx` files. Since the browser uses Babel Standalone without the TypeScript preset, these were causing syntax errors and white screen of death.

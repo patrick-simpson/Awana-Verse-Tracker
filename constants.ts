@@ -1,7 +1,7 @@
 
 // !!! UPDATE THESE ON EVERY CHANGE !!!
-export const APP_VERSION = "1.3.1";
-export const LAST_MODIFIED = "Feb 24, 2025 01:45 PM";
+export const APP_VERSION = "1.4.0";
+export const LAST_MODIFIED = "Feb 24, 2025 02:00 PM";
 // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 export const THEMES = [
@@ -13,6 +13,7 @@ export const THEMES = [
     accentColor: "#FFD700",
     icon: "🌅",
     animationType: "drop",
+    videoUrl: "https://cdn.pixabay.com/video/2020/07/31/46071-447547514_large.mp4"
   },
   {
     id: "river",
@@ -22,6 +23,7 @@ export const THEMES = [
     accentColor: "#E0F7FA",
     icon: "🌊",
     animationType: "slide",
+    videoUrl: "https://cdn.pixabay.com/video/2020/07/04/43793-435948946_large.mp4"
   },
   {
     id: "jungle",
@@ -31,6 +33,7 @@ export const THEMES = [
     accentColor: "#76FF03",
     icon: "🌴",
     animationType: "pop",
+    videoUrl: "https://cdn.pixabay.com/video/2020/04/10/35447-407604471_large.mp4"
   },
   {
     id: "village",
@@ -40,6 +43,7 @@ export const THEMES = [
     accentColor: "#8D6E63",
     icon: "🏘️",
     animationType: "spin",
+    videoUrl: "https://cdn.pixabay.com/video/2015/10/23/1089-143577758_large.mp4"
   },
   {
     id: "celebration",
@@ -49,5 +53,6 @@ export const THEMES = [
     accentColor: "#E1BEE7",
     icon: "✨",
     animationType: "zoom",
+    videoUrl: "https://cdn.pixabay.com/video/2020/08/23/47864-452427670_large.mp4"
   },
 ];

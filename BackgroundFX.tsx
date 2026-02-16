@@ -1,11 +1,12 @@
+
 import React, { useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
 
 const BackgroundFX = ({ theme }) => {
-  const containerRef = useRef(null);
+  const particlesRef = useRef(null);
 
   useLayoutEffect(() => {
-    const container = containerRef.current;
+    const container = particlesRef.current;
     if (!container) return;
 
     container.innerHTML = '';
@@ -145,12 +146,47 @@ const BackgroundFX = ({ theme }) => {
           });
         });
       }
-    }, containerRef);
+    }, particlesRef);
 
     return () => ctx.revert();
   }, [theme]);
 
-  return <div ref={containerRef} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none' }} />;
+  return (
+    <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 1, pointerEvents: 'none', overflow: 'hidden' }}>
+        {/* Video Layer */}
+        {theme.videoUrl && (
+          <div style={{ 
+              position: 'absolute', 
+              top: 0, left: 0, width: '100%', height: '100%', 
+              zIndex: 0, 
+              opacity: 0.25 
+          }}>
+            <video
+              key={theme.videoUrl} 
+              src={theme.videoUrl}
+              autoPlay
+              muted
+              loop
+              playsInline
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+              }}
+            />
+            {/* Blend Overlay */}
+             <div style={{
+                position: 'absolute',
+                top: 0, left: 0, width: '100%', height: '100%',
+                background: 'linear-gradient(to bottom, transparent, rgba(0,0,0,0.3))' 
+             }}></div>
+          </div>
+        )}
+
+        {/* Particle Container */}
+        <div ref={particlesRef} style={{ position: 'absolute', inset: 0, zIndex: 1 }} />
+    </div>
+  );
 };
 
 export default BackgroundFX;
