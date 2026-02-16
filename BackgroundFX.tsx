@@ -1,4 +1,3 @@
-
 import React, { useRef, useLayoutEffect } from "react";
 import gsap from "gsap";
 
@@ -61,7 +60,7 @@ const BackgroundFX = ({ theme }) => {
           gsap.to(p, {
             y: -100,
             x: `+=${gsap.utils.random(-100, 100)}`,
-            opacity: [0, 0.6, 0], // Fade in then out
+            keyframes: { opacity: [0, 0.6, 0] }, // Fade in then out
             duration: gsap.utils.random(6, 12),
             repeat: -1,
             ease: 'sine.inOut',

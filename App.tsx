@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "./firebase";
@@ -25,7 +24,7 @@ const App = () => {
   // Init Audio
   const initAudio = () => {
     try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
       if (AudioContext) {
         audioContextRef.current = new AudioContext();
       }

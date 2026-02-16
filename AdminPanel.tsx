@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 
 const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
@@ -43,7 +42,7 @@ const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
     );
   }
 
-  const containerStyle = {
+  const containerStyle: React.CSSProperties = {
     position: "fixed",
     bottom: "20px",
     right: "20px",
