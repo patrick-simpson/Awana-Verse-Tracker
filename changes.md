@@ -24,17 +24,22 @@
 
 ## Changelog
 
-### v1.3.0 - Feb 24, 2025
+### v1.3.1 - Feb 24, 2025 (01:45 PM)
+- **CRITICAL FIX:** Removed TypeScript syntax (e.g., `as any`, `: React.CSSProperties`) from `.tsx` files. Since the browser uses Babel Standalone without the TypeScript preset, these were causing syntax errors and white screen of death.
+- **CRITICAL FIX:** Removed conflicting React 19 wildcard entries from `index.html` import map. This prevents the "Minified React error #31" caused by loading two different versions of React simultaneously.
+- **Update:** Added specific timestamps to the changelog.
+
+### v1.3.0 - Feb 24, 2025 (01:35 PM)
 - **Documentation:** Added `changes.md` for version control and design documentation.
 - **UI Polish:** improved visibility of version number on the start screen.
 
-### v1.2.0 - Feb 24, 2025
+### v1.2.0 - Feb 24, 2025 (01:25 PM)
 - **Critical Fix:** Resolved "Minified React error #31" by pinning dependencies to React 18.2.0 in `importmap` and removing conflicting React 19 wildcard entries.
 - **Compatibility:** Removed TypeScript-specific syntax (type casting) from `.tsx` files to ensure compatibility with the in-browser Babel transpiler.
 - **Bugfix:** Fixed `AudioContext` initialization for WebKit browsers (Safari).
 - **Bugfix:** Fixed `CSSProperties` type error in AdminPanel.
 
-### v1.1.0 - Feb 24, 2025
+### v1.1.0 - Feb 24, 2025 (01:10 PM)
 - **Feature:** Added `StartOverlay` to handle "Click to Start" flow.
 - **Feature:** Implemented `APP_VERSION` and `LAST_MODIFIED` display on the start screen.
 

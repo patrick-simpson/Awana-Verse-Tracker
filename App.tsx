@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from "react";
 import { ref, onValue, set } from "firebase/database";
 import { db } from "./firebase";
@@ -24,9 +25,9 @@ const App = () => {
   // Init Audio
   const initAudio = () => {
     try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      if (AudioContext) {
-        audioContextRef.current = new AudioContext();
+      const AudioContextCtor = window.AudioContext || (window as any).webkitAudioContext;
+      if (AudioContextCtor) {
+        audioContextRef.current = new AudioContextCtor();
       }
     } catch (e) {
       console.error("Audio init error", e);
