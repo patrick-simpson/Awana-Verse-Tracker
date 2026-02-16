@@ -23,28 +23,67 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
-        background-color: #000;
+        background-color: #111;
         font-family: 'Poppins', sans-serif;
         -webkit-font-smoothing: antialiased;
+        color: white;
       }
       #root {
         width: 100%;
         height: 100%;
       }
+      
+      /* Critical Styles to prevent FOUC (Flash of Unstyled Content) */
+      .counter-text {
+        font-size: 15rem;
+        font-weight: 900;
+        font-family: 'Nunito', sans-serif;
+        line-height: 1;
+        cursor: default;
+        user-select: none;
+        will-change: transform, opacity;
+        text-align: center;
+        /* Responsive sizing */
+        font-variant-numeric: tabular-nums;
+      }
+      @media (max-width: 1024px) {
+        .counter-text { font-size: 10rem; }
+      }
+      @media (max-width: 600px) {
+        .counter-text { font-size: 6rem; }
+      }
+
+      /* Animated Gradient Background */
+      .animated-bg {
+        background-size: 400% 400%;
+        animation: gradientFlow 15s ease infinite;
+      }
+      @keyframes gradientFlow {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+      }
+
       /* Admin Modal Animation */
       @keyframes slideUp {
         from { transform: translateY(20px); opacity: 0; }
         to { transform: translateY(0); opacity: 1; }
       }
+      
       /* Floating Icon Animation */
       @keyframes float {
-        0% { transform: translateY(0px); }
-        50% { transform: translateY(-20px); }
-        100% { transform: translateY(0px); }
+        0% { transform: translateY(0px) rotate(0deg); }
+        33% { transform: translateY(-15px) rotate(2deg); }
+        66% { transform: translateY(5px) rotate(-2deg); }
+        100% { transform: translateY(0px) rotate(0deg); }
+      }
+
+      button:active {
+        transform: scale(0.95);
       }
     </style>
 
-    <!-- Import Map: Switched to esm.sh for robust dependency resolution -->
+    <!-- Import Map -->
     <script type="importmap">
     {
       "imports": {
@@ -66,19 +105,13 @@
       import { initializeApp } from "firebase/app";
       import { getDatabase, ref, onValue, set } from "firebase/database";
 
-      // --- CONFIGURATION ---
-      const ADMIN_PIN = "1234"; // Simple protection for the event
-      
-      const AUDIO_URLS = {
-        pop: "https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3",
-        celebrate: "https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3",
-      };
-
+      // --- THEMES ---
+      // Using CSS Gradients that are animated for a video-like feel
       const THEMES = [
         {
           id: "savanna",
           name: "Sunrise Savanna",
-          gradient: "linear-gradient(135deg, #FF9966 0%, #FF5E62 100%)",
+          gradient: "linear-gradient(-45deg, #FF512F, #DD2476, #FF9966, #FF5E62)",
           textColor: "#FFFFFF",
           accentColor: "#FFD700",
           icon: "🌅",
@@ -87,25 +120,25 @@
         {
           id: "river",
           name: "River Crossing",
-          gradient: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+          gradient: "linear-gradient(-45deg, #2193b0, #6dd5ed, #2980b9, #6dd5ed)",
           textColor: "#FFFFFF",
-          accentColor: "#003366",
+          accentColor: "#E0F7FA",
           icon: "🌊",
           animationType: "slide",
         },
         {
           id: "jungle",
           name: "Jungle Trek",
-          gradient: "linear-gradient(135deg, #11998e 0%, #38ef7d 100%)",
+          gradient: "linear-gradient(-45deg, #11998e, #38ef7d, #0575E6, #021B79)",
           textColor: "#FFFFFF",
-          accentColor: "#0b4d0b",
+          accentColor: "#76FF03",
           icon: "🌴",
           animationType: "pop",
         },
         {
           id: "village",
           name: "Village Build",
-          gradient: "linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)",
+          gradient: "linear-gradient(-45deg, #FFB75E, #ED8F03, #d299c2, #fef9d7)",
           textColor: "#5D4037",
           accentColor: "#8D6E63",
           icon: "🏘️",
@@ -114,7 +147,7 @@
         {
           id: "celebration",
           name: "Celebration Night",
-          gradient: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+          gradient: "linear-gradient(-45deg, #12c2e9, #c471ed, #f64f59, #667eea)",
           textColor: "#FFD700",
           accentColor: "#E1BEE7",
           icon: "✨",
@@ -146,6 +179,55 @@
         console.error("Firebase failed to load. Running in local offline mode.", e);
       }
 
+      // --- AUDIO SYSTEM (Web Audio API) ---
+      // Replaced external files with synthesis for 100% reliability
+      const playSound = (type, ctx) => {
+        if (!ctx) return;
+        if (ctx.state === 'suspended') ctx.resume();
+
+        const t = ctx.currentTime;
+
+        if (type === 'pop') {
+            // Whimsical "Bloop"
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            
+            osc.type = 'sine';
+            // Random pitch for variety
+            const freq = 500 + Math.random() * 200;
+            osc.frequency.setValueAtTime(freq, t);
+            osc.frequency.exponentialRampToValueAtTime(freq * 0.5, t + 0.15);
+            
+            gain.gain.setValueAtTime(0, t);
+            gain.gain.linearRampToValueAtTime(0.3, t + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+            
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t);
+            osc.stop(t + 0.2);
+        } else if (type === 'celebrate') {
+            // Major Chord Arpeggio (Fanfare)
+            const notes = [523.25, 659.25, 783.99, 1046.50]; // C, E, G, C
+            notes.forEach((note, i) => {
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(note, t + i * 0.08);
+                
+                gain.gain.setValueAtTime(0, t + i * 0.08);
+                gain.gain.linearRampToValueAtTime(0.2, t + i * 0.08 + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.08 + 0.8);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(t + i * 0.08);
+                osc.stop(t + i * 0.08 + 1.0);
+            });
+        }
+      };
+
       // --- COMPONENTS ---
 
       // 1. Start Overlay
@@ -165,49 +247,37 @@
               backdropFilter: "blur(10px)",
             }}
           >
-            <h1 style={{ marginBottom: "20px", textAlign: "center", fontFamily: 'Poppins, sans-serif' }}>
+            <h1 style={{ marginBottom: "30px", textAlign: "center", fontFamily: 'Poppins, sans-serif' }}>
               Awana Africa<br />Verse Counter
             </h1>
             <button
               onClick={onStart}
               style={{
-                padding: "15px 40px",
+                padding: "20px 50px",
                 fontSize: "24px",
                 backgroundColor: "#FFD700",
                 color: "#333",
                 border: "none",
                 borderRadius: "50px",
                 cursor: "pointer",
-                fontWeight: "bold",
-                boxShadow: "0 4px 15px rgba(255, 215, 0, 0.4)",
-                transition: "transform 0.2s",
+                fontWeight: "900",
+                boxShadow: "0 0 30px rgba(255, 215, 0, 0.6)",
+                transition: "all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.05)")}
+              onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
               onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
             >
-              Start Broadcast
+              🚀 Launch Display
             </button>
-            <p style={{ marginTop: "20px", opacity: 0.6 }}>Initializes Audio & Sync</p>
+            <p style={{ marginTop: "20px", opacity: 0.6, fontSize: "0.9rem" }}>Click to enable audio & animations</p>
           </div>
         );
       };
 
-      // 2. Admin Panel
+      // 2. Admin Panel (No PIN)
       const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
         const [isOpen, setIsOpen] = useState(false);
-        const [isAuthenticated, setIsAuthenticated] = useState(false);
-        const [pinInput, setPinInput] = useState("");
         const [customVal, setCustomVal] = useState("");
-
-        const handlePinSubmit = () => {
-          if (pinInput === ADMIN_PIN) {
-            setIsAuthenticated(true);
-            setPinInput("");
-          } else {
-            alert("Incorrect PIN");
-            setPinInput("");
-          }
-        };
 
         if (!isOpen) {
           return (
@@ -217,28 +287,29 @@
                 position: "fixed",
                 bottom: "20px",
                 right: "20px",
-                width: "50px",
-                height: "50px",
+                width: "60px",
+                height: "60px",
                 borderRadius: "50%",
-                backgroundColor: "rgba(255,255,255,0.2)",
-                border: "none",
+                backgroundColor: "rgba(255,255,255,0.15)",
+                backdropFilter: "blur(5px)",
+                border: "1px solid rgba(255,255,255,0.2)",
                 cursor: "pointer",
                 zIndex: 100,
-                opacity: 0.4,
                 transition: "all 0.3s",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                fontSize: "24px",
-                color: "white"
+                fontSize: "28px",
+                color: "white",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.2)"
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.opacity = "1";
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.4)";
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.3)";
+                e.currentTarget.style.transform = "rotate(90deg)";
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.opacity = "0.4";
-                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.2)";
+                e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.15)";
+                e.currentTarget.style.transform = "rotate(0deg)";
               }}
             >
               ⚙️
@@ -250,60 +321,46 @@
           position: "fixed",
           bottom: "20px",
           right: "20px",
-          backgroundColor: "white",
-          padding: "20px",
-          borderRadius: "15px",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+          backgroundColor: "#fff",
+          padding: "25px",
+          borderRadius: "20px",
+          boxShadow: "0 20px 50px rgba(0,0,0,0.5)",
           zIndex: 101,
           color: "#333",
-          width: "300px",
-          animation: "slideUp 0.3s ease-out"
+          width: "320px",
+          animation: "slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)"
         };
 
         const adminButtonStyle = {
-          padding: "10px",
+          padding: "12px",
           border: "none",
-          borderRadius: "8px",
-          backgroundColor: "#f0f0f0",
+          borderRadius: "12px",
+          backgroundColor: "#f0f2f5",
           cursor: "pointer",
-          fontWeight: "600",
+          fontWeight: "700",
+          fontSize: "14px",
           transition: "all 0.2s",
           boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
         };
 
-        // Auth Screen
-        if (!isAuthenticated) {
-          return (
-            <div style={containerStyle}>
-              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
-                <h3 style={{ margin: 0 }}>Admin Access</h3>
-                <button onClick={() => setIsOpen(false)} style={{ border: "none", background: "none", cursor: "pointer" }}>✕</button>
-              </div>
-              <input 
-                type="password" 
-                value={pinInput}
-                onChange={(e) => setPinInput(e.target.value)}
-                placeholder="Enter PIN"
-                style={{ width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "8px", border: "1px solid #ccc", boxSizing: "border-box" }}
-              />
-              <button 
-                onClick={handlePinSubmit}
-                style={{ ...adminButtonStyle, width: "100%", backgroundColor: "#FFD700", color: "#333" }}
-              >
-                Unlock
-              </button>
-            </div>
-          );
-        }
-
-        // Controls Screen
         return (
           <div style={containerStyle}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "15px" }}>
-              <h3 style={{ margin: 0 }}>Admin Control</h3>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", alignItems: "center" }}>
+              <h3 style={{ margin: 0, fontSize: "1.2rem" }}>Control Panel</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                style={{ border: "none", background: "none", cursor: "pointer", fontSize: "16px", padding: "5px" }}
+                style={{ 
+                    border: "none", 
+                    background: "#eee", 
+                    borderRadius: "50%",
+                    width: "30px",
+                    height: "30px",
+                    cursor: "pointer", 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'center',
+                    fontWeight: 'bold'
+                }}
               >
                 ✕
               </button>
@@ -312,30 +369,31 @@
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "15px" }}>
               <button
                 onClick={() => onUpdateCount(currentCount + 1)}
-                style={adminButtonStyle}
+                style={{...adminButtonStyle, backgroundColor: "#E3F2FD", color: "#1565C0"}}
               >
                 +1 Verse
               </button>
               <button
                 onClick={() => onUpdateCount(currentCount + 5)}
-                style={adminButtonStyle}
+                style={{...adminButtonStyle, backgroundColor: "#E3F2FD", color: "#1565C0"}}
               >
                 +5 Verses
               </button>
             </div>
 
-            <div style={{ display: "flex", gap: "10px", marginBottom: "15px" }}>
+            <div style={{ display: "flex", gap: "10px", marginBottom: "20px" }}>
               <input
                 type="number"
-                placeholder="Custom Amount"
+                placeholder="Value..."
                 value={customVal}
                 onChange={(e) => setCustomVal(e.target.value)}
                 style={{
                   flex: 1,
-                  padding: "8px",
-                  border: "1px solid #ccc",
-                  borderRadius: "5px",
-                  fontSize: "16px"
+                  padding: "12px",
+                  border: "2px solid #eee",
+                  borderRadius: "12px",
+                  fontSize: "16px",
+                  outline: "none"
                 }}
               />
               <button
@@ -344,7 +402,7 @@
                    if(!isNaN(val)) onUpdateCount(currentCount + val);
                    setCustomVal("");
                 }}
-                style={adminButtonStyle}
+                style={{...adminButtonStyle, backgroundColor: "#333", color: "white"}}
               >
                 Add
               </button>
@@ -356,20 +414,26 @@
                   onUpdateCount(0);
                 }
               }}
-              style={{ ...adminButtonStyle, backgroundColor: "#ff4444", color: "white" }}
+              style={{ ...adminButtonStyle, width: "100%", backgroundColor: "#ffebee", color: "#c62828" }}
             >
               Reset Counter
             </button>
 
-            <div style={{ marginTop: "15px", fontSize: "12px", color: "#888", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
-              <span style={{ width: "8px", height: "8px", borderRadius: "50%", backgroundColor: isOffline ? "#ff4444" : "#00C851" }}></span>
-              {isOffline ? "Offline Mode (Local Only)" : "Connected to Database"}
+            <div style={{ marginTop: "20px", fontSize: "12px", color: "#888", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: "6px" }}>
+              <span style={{ 
+                  width: "10px", 
+                  height: "10px", 
+                  borderRadius: "50%", 
+                  backgroundColor: isOffline ? "#ff4444" : "#00C851",
+                  boxShadow: `0 0 10px ${isOffline ? "#ff4444" : "#00C851"}`
+              }}></span>
+              {isOffline ? "Offline Mode (Local Only)" : "Live Database Connection"}
             </div>
           </div>
         );
       };
 
-      // 3. Background FX
+      // 3. Background FX (Whimsical Particles)
       const BackgroundFX = ({ theme }) => {
         const containerRef = useRef(null);
 
@@ -379,12 +443,11 @@
 
           container.innerHTML = '';
           const particles = [];
-          const count = 30;
+          // More particles for better effect
+          const count = window.innerWidth < 600 ? 15 : 40; 
 
-          // Create Generic Particles
           for (let i = 0; i < count; i++) {
             const p = document.createElement('div');
-            // Basic styling, specific styling handled in GSAP
             p.style.position = 'absolute';
             p.style.opacity = '0';
             p.style.pointerEvents = 'none';
@@ -395,72 +458,74 @@
 
           const ctx = gsap.context(() => {
             if (theme.id === 'savanna') {
-              // Floating Dust / Heat Haze
-              particles.forEach((p, i) => {
+              // Heat Haze / Dust
+              particles.forEach((p) => {
                 gsap.set(p, {
-                  width: gsap.utils.random(5, 20),
-                  height: gsap.utils.random(5, 20),
+                  width: gsap.utils.random(10, 30),
+                  height: gsap.utils.random(10, 30),
                   backgroundColor: '#FFF',
                   borderRadius: '50%',
+                  filter: 'blur(5px)',
                   x: gsap.utils.random(0, window.innerWidth),
                   y: gsap.utils.random(0, window.innerHeight),
-                  opacity: gsap.utils.random(0.1, 0.4)
+                  opacity: gsap.utils.random(0.05, 0.2)
                 });
                 gsap.to(p, {
-                  y: '-=200',
+                  y: '-=150',
+                  x: `+=${gsap.utils.random(-50, 50)}`,
                   opacity: 0,
-                  duration: gsap.utils.random(5, 10),
+                  duration: gsap.utils.random(4, 8),
                   repeat: -1,
                   ease: 'none',
                   delay: gsap.utils.random(0, 5)
                 });
               });
             } else if (theme.id === 'river') {
-              // Flowing Lines
-              particles.forEach((p, i) => {
+              // Bubbles / Water particles
+              particles.forEach((p) => {
                  gsap.set(p, {
-                  width: gsap.utils.random(100, 300),
-                  height: gsap.utils.random(2, 4),
-                  backgroundColor: '#FFF',
-                  borderRadius: '2px',
-                  x: gsap.utils.random(-100, window.innerWidth),
-                  y: gsap.utils.random(0, window.innerHeight),
-                  opacity: gsap.utils.random(0.1, 0.3)
+                  width: gsap.utils.random(5, 15),
+                  height: gsap.utils.random(5, 15),
+                  border: '2px solid rgba(255,255,255,0.4)',
+                  borderRadius: '50%',
+                  x: gsap.utils.random(0, window.innerWidth),
+                  y: window.innerHeight + 50,
                 });
                 gsap.to(p, {
-                  x: '+=500',
-                  opacity: 0,
-                  duration: gsap.utils.random(8, 15),
+                  y: -100,
+                  x: `+=${gsap.utils.random(-100, 100)}`,
+                  opacity: [0, 0.6, 0], // Fade in then out
+                  duration: gsap.utils.random(6, 12),
                   repeat: -1,
-                  ease: 'none',
-                  delay: gsap.utils.random(0, 5)
+                  ease: 'sine.inOut',
+                  delay: gsap.utils.random(0, 8)
                 });
               });
             } else if (theme.id === 'jungle') {
               // Fireflies
-              particles.forEach((p, i) => {
+              particles.forEach((p) => {
                  gsap.set(p, {
-                  width: gsap.utils.random(4, 8),
-                  height: gsap.utils.random(4, 8),
-                  backgroundColor: '#ccff00',
+                  width: gsap.utils.random(4, 6),
+                  height: gsap.utils.random(4, 6),
+                  backgroundColor: '#CCFF00',
                   borderRadius: '50%',
-                  boxShadow: '0 0 10px #ccff00',
+                  boxShadow: '0 0 15px #CCFF00',
                   x: gsap.utils.random(0, window.innerWidth),
                   y: gsap.utils.random(0, window.innerHeight),
                   opacity: 0
                 });
                 // Blink
                 gsap.to(p, {
-                  opacity: gsap.utils.random(0.3, 0.8),
-                  duration: gsap.utils.random(1, 2),
+                  opacity: gsap.utils.random(0.4, 1),
+                  duration: gsap.utils.random(1, 3),
                   yoyo: true,
                   repeat: -1,
                   ease: 'sine.inOut',
                   delay: gsap.utils.random(0, 2)
                 });
-                // Move
+                // Wander
                 gsap.to(p, {
-                  x: `+=${gsap.utils.random(-100, 100)}`,
+                  x: `+=${gsap.utils.random(-200, 200)}`,
                   y: `+=${gsap.utils.random(-100, 100)}`,
                   duration: gsap.utils.random(10, 20),
                   repeat: -1,
@@ -469,34 +534,34 @@
                 });
               });
             } else if (theme.id === 'village') {
-              // Rising Squares
-              particles.forEach((p, i) => {
-                const size = gsap.utils.random(20, 50);
+              // Building blocks / Geometric
+              particles.forEach((p) => {
+                const size = gsap.utils.random(20, 40);
                 gsap.set(p, {
                   width: size,
                   height: size,
-                  border: '2px solid rgba(255,255,255,0.2)',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  borderRadius: '4px',
                   x: gsap.utils.random(0, window.innerWidth),
                   y: window.innerHeight + 50,
                   rotation: gsap.utils.random(0, 360),
-                  opacity: 0.3
                 });
                 gsap.to(p, {
                   y: -100,
-                  rotation: '+=90',
-                  duration: gsap.utils.random(10, 20),
+                  rotation: '+=180',
+                  duration: gsap.utils.random(10, 15),
                   repeat: -1,
-                  ease: 'none',
+                  ease: 'linear',
                   delay: gsap.utils.random(0, 10)
                 });
               });
             } else if (theme.id === 'celebration') {
-              // Falling Confetti
-              particles.forEach((p, i) => {
-                 const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#FFF'];
+              // Confetti
+              particles.forEach((p) => {
+                 const colors = ['#FFD700', '#FF69B4', '#00BFFF', '#FFF', '#76FF03'];
                  gsap.set(p, {
-                  width: gsap.utils.random(10, 15),
-                  height: gsap.utils.random(5, 10),
+                  width: gsap.utils.random(8, 12),
+                  height: gsap.utils.random(8, 12),
                   backgroundColor: gsap.utils.random(colors),
                   x: gsap.utils.random(0, window.innerWidth),
                   y: -50,
@@ -504,12 +569,13 @@
                 });
                 gsap.to(p, {
                   y: window.innerHeight + 50,
-                  rotationX: '+=360',
+                  rotationX: '+=720',
                   rotationY: '+=360',
-                  duration: gsap.utils.random(3, 6),
+                  x: `+=${gsap.utils.random(-100, 100)}`,
+                  duration: gsap.utils.random(3, 5),
                   repeat: -1,
                   ease: 'linear',
-                  delay: gsap.utils.random(0, 5)
+                  delay: gsap.utils.random(0, 3)
                 });
               });
             }
@@ -531,51 +597,25 @@
         const numberRef = useRef(null);
         const bgRef = useRef(null);
         const audioContextRef = useRef(null);
-        const popBufferRef = useRef(null);
-        const celebrateBufferRef = useRef(null);
 
         const themeIndex = Math.min(Math.floor(count / 100), THEMES.length - 1);
         const currentTheme = THEMES[themeIndex] || THEMES[0];
 
         // Init Audio
-        const initAudio = async () => {
+        const initAudio = () => {
           try {
             const AudioContext = window.AudioContext || window.webkitAudioContext;
             audioContextRef.current = new AudioContext();
-
-            const loadSound = async (url) => {
-              try {
-                const response = await fetch(url);
-                const arrayBuffer = await response.arrayBuffer();
-                return await audioContextRef.current.decodeAudioData(arrayBuffer);
-              } catch (e) {
-                console.warn("Audio load failed", e);
-                return null;
-              }
-            };
-
-            popBufferRef.current = await loadSound(AUDIO_URLS.pop);
-            celebrateBufferRef.current = await loadSound(AUDIO_URLS.celebrate);
           } catch (e) {
             console.error("Audio init error", e);
           }
           setHasStarted(true);
         };
 
-        const playSound = (type) => {
-          if (!audioContextRef.current) return;
-          
-          if (audioContextRef.current.state === "suspended") {
-            audioContextRef.current.resume();
-          }
-
-          const buffer = type === "pop" ? popBufferRef.current : celebrateBufferRef.current;
-          if (buffer) {
-            const source = audioContextRef.current.createBufferSource();
-            source.buffer = buffer;
-            source.connect(audioContextRef.current.destination);
-            source.start(0);
-          }
+        const triggerSound = (type) => {
+           if (audioContextRef.current) {
+               playSound(type, audioContextRef.current);
+           }
         };
 
         // Firebase Sync
@@ -621,7 +661,7 @@
           }
         };
 
-        // Animations
+        // Animations & Logic
         useEffect(() => {
           if (!hasStarted) return;
           if (count === prevCount) return;
@@ -629,19 +669,19 @@
           const isLevelUp = Math.floor(count / 100) > Math.floor(prevCount / 100);
           const isIncrease = count > prevCount;
 
-          if (isLevelUp) playSound("celebrate");
-          else if (isIncrease) playSound("pop");
+          if (isLevelUp) triggerSound("celebrate");
+          else if (isIncrease) triggerSound("pop");
 
           if (numberRef.current && window.gsap) {
             const tl = window.gsap.timeline();
             window.gsap.set(numberRef.current, { clearProps: "all" });
 
-            // Refined Animations with Squash/Stretch and smoother easing
+            // Robust Animation Logic
             switch (currentTheme.animationType) {
               case "drop":
                  tl.fromTo(numberRef.current, 
-                   { y: -150, scaleY: 1.5, scaleX: 0.8, opacity: 0 }, 
-                   { y: 0, scaleY: 1, scaleX: 1, opacity: 1, duration: 0.5, ease: "back.out(1.7)" }
+                   { y: -100, scaleY: 1.5, scaleX: 0.8, opacity: 0 }, 
+                   { y: 0, scaleY: 1, scaleX: 1, opacity: 1, duration: 0.6, ease: "elastic.out(1, 0.5)" }
                  );
                  break;
               case "slide":
@@ -652,21 +692,21 @@
                 break;
               case "pop":
                 tl.fromTo(numberRef.current,
-                  { scale: 0.2, rotation: -20, opacity: 0 },
-                  { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: "elastic.out(1.2, 0.5)" }
+                  { scale: 0.2, rotation: -15, opacity: 0 },
+                  { scale: 1, rotation: 0, opacity: 1, duration: 0.5, ease: "back.out(2)" }
                 );
                 break;
               case "spin":
                 tl.fromTo(numberRef.current,
-                  { rotationX: 90, opacity: 0, scale: 0.8 },
-                  { rotationX: 0, opacity: 1, scale: 1, duration: 0.6, ease: "back.out(1.5)" }
+                  { rotationX: 90, opacity: 0, y: 50 },
+                  { rotationX: 0, opacity: 1, y: 0, duration: 0.7, ease: "expo.out" }
                 );
                 break;
               case "zoom":
               default:
                 tl.fromTo(numberRef.current,
                   { scale: 3, opacity: 0, filter: "blur(20px)" },
-                  { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.6, ease: "circ.out" }
+                  { scale: 1, opacity: 1, filter: "blur(0px)", duration: 0.8, ease: "circ.out" }
                 );
                 break;
             }
@@ -683,33 +723,36 @@
 
         return (
           <div
+            className="animated-bg"
             ref={bgRef}
             style={{
               width: "100%",
               height: "100%",
               background: currentTheme.gradient,
+              backgroundSize: '400% 400%',
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
               justifyContent: "center",
-              transition: "background 1s ease-in-out",
+              transition: "background-image 1s ease-in-out",
               position: "relative",
               overflow: "hidden",
             }}
           >
-            {/* Ambient Background */}
+            {/* Ambient Particles */}
             <BackgroundFX theme={currentTheme} />
 
-            {/* Background Icon */}
+            {/* Background Floating Icon */}
             <div
               style={{
                 position: "absolute",
                 fontSize: "50vh",
-                opacity: 0.1,
+                opacity: 0.15,
                 pointerEvents: "none",
                 userSelect: "none",
                 animation: "float 6s ease-in-out infinite",
-                zIndex: 2
+                zIndex: 2,
+                filter: 'drop-shadow(0 0 20px rgba(255,255,255,0.3))'
               }}
             >
               {currentTheme.icon}
@@ -719,19 +762,20 @@
             <div
               style={{
                 position: "absolute",
-                top: "40px",
+                top: "5%",
                 textAlign: "center",
                 color: currentTheme.textColor,
-                opacity: 0.9,
-                zIndex: 20
+                zIndex: 20,
+                width: "100%"
               }}
             >
               <h2 style={{ 
                 margin: 0, 
-                fontSize: "2rem", 
+                fontSize: "clamp(1.5rem, 4vw, 2.5rem)", 
                 textTransform: "uppercase", 
                 letterSpacing: "4px", 
-                textShadow: "0 2px 10px rgba(0,0,0,0.2)"
+                textShadow: "0 2px 10px rgba(0,0,0,0.2)",
+                opacity: 0.9
               }}>
                 Verses Recited
               </h2>
@@ -740,17 +784,11 @@
             {/* Counter */}
             <div
               ref={numberRef}
+              className="counter-text"
               style={{
-                fontSize: "15rem",
-                fontWeight: "900",
-                fontFamily: "'Nunito', sans-serif",
                 color: currentTheme.textColor,
                 textShadow: `0 10px 30px rgba(0,0,0,0.3), 4px 4px 0px ${currentTheme.accentColor}`,
                 zIndex: 10,
-                lineHeight: 1,
-                cursor: "default",
-                userSelect: "none",
-                willChange: "transform, opacity"
               }}
             >
               {count}
