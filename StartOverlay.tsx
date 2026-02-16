@@ -1,5 +1,6 @@
 
 import React from "react";
+import { APP_VERSION, LAST_MODIFIED } from "./constants";
 
 const StartOverlay = ({ onStart }) => {
   return (
@@ -40,6 +41,18 @@ const StartOverlay = ({ onStart }) => {
         🚀 Launch Display
       </button>
       <p style={{ marginTop: "20px", opacity: 0.6, fontSize: "0.9rem" }}>Click to enable audio & animations</p>
+
+      {/* Version Info */}
+      <div style={{
+          position: "absolute",
+          bottom: "20px",
+          textAlign: "center",
+          color: "rgba(255,255,255,0.3)",
+          fontSize: "0.75rem",
+          fontFamily: "monospace"
+      }}>
+        v{APP_VERSION} &bull; {LAST_MODIFIED}
+      </div>
     </div>
   );
 };
