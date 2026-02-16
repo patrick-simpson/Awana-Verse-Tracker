@@ -47,9 +47,10 @@ const StartOverlay = ({ onStart }) => {
           position: "absolute",
           bottom: "20px",
           textAlign: "center",
-          color: "rgba(255,255,255,0.3)",
-          fontSize: "0.75rem",
-          fontFamily: "monospace"
+          color: "rgba(255,255,255,0.5)",
+          fontSize: "0.85rem",
+          fontFamily: "monospace",
+          letterSpacing: "1px"
       }}>
         v{APP_VERSION} &bull; {LAST_MODIFIED}
       </div>
