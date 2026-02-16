@@ -43,7 +43,7 @@ const AdminPanel = ({ currentCount, onUpdateCount, isOffline }) => {
     );
   }
 
-  const containerStyle: React.CSSProperties = {
+  const containerStyle = {
     position: "fixed",
     bottom: "20px",
     right: "20px",

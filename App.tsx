@@ -25,8 +25,10 @@ const App = () => {
   // Init Audio
   const initAudio = () => {
     try {
-      const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-      audioContextRef.current = new AudioContext();
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        audioContextRef.current = new AudioContext();
+      }
     } catch (e) {
       console.error("Audio init error", e);
     }
