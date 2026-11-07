@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude Code local settings (may hold secrets from approved commands)
+.claude/settings.local.json
